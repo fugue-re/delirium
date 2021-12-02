@@ -1,0 +1,14 @@
+[package]
+name = "delirium"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+educe = "0.4"
+intervals = { version = "0.1", registry = "fugue" }
+fugue = { version = "0.2", registry = "fugue" }
+num-traits = "0.2"
+petgraph = "0.6"
+ron-uuid = "0.4"
+smallvec = "1"
+thiserror = "1"
