@@ -1,3 +1,4 @@
+use fugue::ir::convention::Convention;
 use fugue::ir::{LanguageDB, Translator};
 
 use std::borrow::Cow;
@@ -8,6 +9,7 @@ use thiserror::Error;
 use crate::types::Endian;
 
 mod passes;
+use passes::ECodeVarIndex;
 
 #[derive(Clone)]
 pub struct LifterBuilder {
@@ -41,10 +43,10 @@ impl LifterBuilder {
     pub fn build(
         &self,
         tag: impl Into<Cow<'static, str>>,
-        convention: impl Into<Cow<'static, str>>,
+        convention: impl AsRef<str>,
     ) -> Result<Lifter, LifterBuilderError> {
         let tag = tag.into();
-        let convention = convention.into();
+        let convention = convention.as_ref();
 
         let builder = self
             .language_db
@@ -52,11 +54,8 @@ impl LifterBuilder {
             .ok_or_else(|| LifterBuilderError::UnsupportedArch)?;
         let translator = builder.build()?;
 
-        if translator.compiler_conventions().contains_key(&*convention) {
-            Ok(Lifter {
-                translator,
-                convention,
-            })
+        if let Some(convention) = translator.compiler_conventions().get(&*convention).cloned() {
+            Ok(Lifter::new(translator, convention))
         } else {
             Err(LifterBuilderError::UnsupportedConv)
         }
@@ -68,9 +67,9 @@ impl LifterBuilder {
         endian: Endian,
         bits: u32,
         variant: impl AsRef<str>,
-        convention: impl Into<Cow<'static, str>>,
+        convention: impl AsRef<str>,
     ) -> Result<Lifter, LifterBuilderError> {
-        let convention = convention.into();
+        let convention = convention.as_ref();
 
         let processor = processor.as_ref();
         let variant = variant.as_ref();
@@ -81,11 +80,8 @@ impl LifterBuilder {
             .ok_or_else(|| LifterBuilderError::UnsupportedArch)?;
         let translator = builder.build()?;
 
-        if translator.compiler_conventions().contains_key(&*convention) {
-            Ok(Lifter {
-                translator,
-                convention,
-            })
+        if let Some(convention) = translator.compiler_conventions().get(&*convention).cloned() {
+            Ok(Lifter::new(translator, convention))
         } else {
             Err(LifterBuilderError::UnsupportedConv)
         }
@@ -95,5 +91,16 @@ impl LifterBuilder {
 #[derive(Clone)]
 pub struct Lifter {
     translator: Translator,
-    convention: Cow<'static, str>,
+    convention: Convention,
+    register_ecode_index: ECodeVarIndex,
+}
+
+impl Lifter {
+    fn new(translator: Translator, convention: Convention) -> Self {
+        Self {
+            register_ecode_index: ECodeVarIndex::registers(&translator),
+            translator,
+            convention,
+        }
+    }
 }

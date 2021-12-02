@@ -11,8 +11,12 @@
 ///   such as AL, AH, AX when we are dealing with x86, with the
 ///   base register, e.g., EAX or RAX.
 
-mod aliases;
-mod temporaries;
+pub(crate) mod aliases;
+#[allow(unused_imports)]
+pub(crate) use aliases::{ECodeVarIndex, ECodeVarAliasNormalisePass};
 
-mod visit;
-mod visit_mut;
+pub(crate) mod visit;
+pub(crate) use visit::Visit;
+
+pub(crate) mod visit_mut;
+pub(crate) use visit_mut::VisitMut;
