@@ -3,19 +3,20 @@
 /// a particular endianness.
 
 use std::borrow::{Borrow, Cow};
+use std::sync::Arc;
 
 use thiserror::Error;
 
-use crate::ir::address::Address;
-use crate::ir::value::bitv::BitVec;
+use crate::ir::memory::Address;
+use crate::ir::value::bv::BitVec;
 
-use crate::types::bytes::{BE, LE, ByteCast, Endian};
-use crate::types::intervals::Interval;
-use crate::types::{Entity, Id};
+use crate::prelude::bytes::{BE, LE, ByteCast, Endian};
+use crate::prelude::intervals::Interval;
+use crate::prelude::{Entity, Id};
 
 #[derive(Clone)]
 pub struct Region<'r> {
-    name: Cow<'static, str>,
+    name: Arc<str>,
     range: Interval<Address>,
     endian: Endian,
     bytes: Cow<'r, [u8]>,
@@ -24,16 +25,16 @@ pub struct Region<'r> {
 #[derive(Debug, Error)]
 pub enum RegionIOError {
     #[error("read/write byte range is unrepresentable for region `{0}`")]
-    Range(Cow<'static, str>),
+    Range(Arc<str>),
     #[error("out-of-bounds read from region `{0}`")]
-    OOBRead(Cow<'static, str>),
+    OOBRead(Arc<str>),
     #[error("out-of-bounds write into region `{0}`")]
-    OOBWrite(Cow<'static, str>),
+    OOBWrite(Arc<str>),
 }
 
 impl<'r> Region<'r> {
     pub fn new_with<N, A, B>(id: Id<Self>, name: N, address: A, endian: Endian, bytes: B) -> Entity<Self>
-    where N: Into<Cow<'static, str>>,
+    where N: Into<Arc<str>>,
           A: Into<Address>,
           B: Into<Cow<'r, [u8]>> {
         let address = address.into();  
@@ -59,7 +60,7 @@ impl<'r> Region<'r> {
     }
 
     pub fn new<N, A, B>(id: Id<Self>, name: N, address: A, endian: Endian, bytes: B) -> Entity<Self>
-    where N: Into<Cow<'static, str>>,
+    where N: Into<Arc<str>>,
           A: Into<Address>,
           B: Into<Cow<'r, [u8]>> {
         Self::new_with(id, name, address, endian, bytes)
@@ -69,8 +70,8 @@ impl<'r> Region<'r> {
         &self.range
     }
     
-    pub fn name(&self) -> &str {
-        &*self.name
+    pub fn name(&self) -> &Arc<str> {
+        &self.name
     }
     
     pub fn address(&self) -> &Address {

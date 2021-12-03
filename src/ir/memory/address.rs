@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 use thiserror::Error;
 
-use crate::ir::value::bitv::{self, BitVec};
+use crate::ir::value::bv::{self, BitVec};
 
 #[derive(Debug, Clone, Hash)]
 #[repr(transparent)]
@@ -23,7 +23,7 @@ impl Display for Address {
 #[derive(Debug, Error)]
 pub enum AddressParseError {
     #[error(transparent)]
-    Parse(#[from] bitv::error::ParseError),
+    Parse(#[from] bv::error::ParseError),
     #[error("cannot parse address from string with radix {0}")]
     Radix(u32),
     #[error("addresses cannot be negative")]

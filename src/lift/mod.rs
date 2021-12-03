@@ -6,10 +6,10 @@ use std::path::Path;
 
 use thiserror::Error;
 
-use crate::types::Endian;
+use crate::prelude::Endian;
 
-mod passes;
-use passes::ECodeVarIndex;
+mod ecode;
+use ecode::passes::ECodeVarIndex;
 
 #[derive(Clone)]
 pub struct LifterBuilder {

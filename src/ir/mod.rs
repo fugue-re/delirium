@@ -1,7 +1,7 @@
-pub mod address;
-pub mod function;
 pub mod block;
 pub mod effect;
-pub mod region;
+pub mod function;
+pub mod memory;
+pub mod project;
 pub mod value;
 pub mod variable;

@@ -1,15 +1,18 @@
+use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 
-use crate::traits::Identifiable;
-use crate::types::Id;
+use crate::prelude::Identifiable;
+use crate::prelude::Id;
 
 #[derive(Debug, Clone)]
 pub struct Entity<V> {
     id: Id<V>,
     value: V,
 }
+
+pub type EntityRef<'a, V> = Cow<'a, Entity<V>>;
 
 impl<V> From<V> for Entity<V> where V: Identifiable<V> {
     fn from(value: V) -> Self {

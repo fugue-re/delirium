@@ -2,6 +2,8 @@ use ron_uuid::UUID;
 use std::fmt::{self, Display};
 use std::marker::PhantomData;
 
+use crate::prelude::Erased;
+
 #[derive(educe::Educe)]
 #[educe(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Id<T> {
@@ -30,11 +32,19 @@ impl<T> Copy for Id<T> { }
 
 impl<T> Id<T> {
     pub fn new(tag: &'static str) -> Self {
+        Self::from_parts(tag, UUID::now())
+    }
+    
+    pub const fn from_parts(tag: &'static str, uuid: UUID) -> Self {
         Self {
-            tag, 
-            uuid: UUID::now(),
+            tag,
+            uuid,
             marker: PhantomData,
         }
+    }
+    
+    pub fn erase(self) -> Id<Erased> {
+        self.transmute::<Erased>()
     }
     
     pub fn transmute<U>(self) -> Id<U> {

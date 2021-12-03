@@ -7,10 +7,10 @@ use fugue::ir::il::ecode::ECode;
 use fugue::ir::il::ecode::Expr as ECodeExpr;
 use fugue::ir::il::ecode::Var as ECodeVar;
 
-use crate::lift::passes::{Visit, VisitMut};
+use crate::lift::ecode::passes::{Visit, VisitMut};
 
-use crate::types::intervals::Interval;
-use crate::types::intervals::collections::IntervalSet;
+use crate::prelude::intervals::Interval;
+use crate::prelude::intervals::collections::IntervalSet;
 
 #[derive(Clone)]
 pub(crate) struct ECodeVarIndex {
