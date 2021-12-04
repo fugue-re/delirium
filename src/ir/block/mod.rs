@@ -26,7 +26,7 @@ impl Blk {
             jmps,
         })
     }
-
+    
     pub fn defs(&self) -> &[Entity<Def>] {
         &self.defs
     }

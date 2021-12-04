@@ -115,8 +115,20 @@ impl Lifter {
     pub fn context(&self) -> ContextDatabase {
         self.translator.context_database()
     }
+
+    pub fn lift_blk(&self, ctxt: &mut ContextDatabase, addr: &Addr, bytes: &[u8]) -> Vec<Entity<Blk>> {
+        self.lift_blk_with(ctxt, addr, bytes, None)
+    }
     
-    pub fn lift_block(&self, context: &mut ContextDatabase, address: Addr, bytes: &[u8]) -> Result<Vec<Entity<Blk>>, LifterError> {
-        Ok(Vec::default())
+    pub fn lift_blk_with(&self, ctxt: &mut ContextDatabase, addr: &Addr, bytes: &[u8], size_hint: Option<usize>) -> Vec<Entity<Blk>> {
+        let actual_size = bytes.len();
+        let attempt_size = size_hint
+            .map(|hint| actual_size.min(hint))
+            .unwrap_or(actual_size);
+        
+        let bytes = &bytes[..attempt_size];
+        let mut blks = Vec::new();
+        
+        blks
     }
 }
