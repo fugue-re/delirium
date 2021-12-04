@@ -1,12 +1,14 @@
 use fugue::ir::convention::Convention;
 use fugue::ir::{LanguageDB, Translator};
+use fugue::ir::disassembly::ContextDatabase;
 
 use std::borrow::Cow;
 use std::path::Path;
 
 use thiserror::Error;
 
-use crate::prelude::Endian;
+use crate::ir::{Addr, Blk};
+use crate::prelude::{Endian, Entity};
 
 mod ecode;
 use ecode::passes::ECodeVarIndex;
@@ -95,6 +97,12 @@ pub struct Lifter {
     register_ecode_index: ECodeVarIndex,
 }
 
+#[derive(Debug, Error)]
+pub enum LifterError {
+    #[error(transparent)]
+    Disassembly(#[from] fugue::ir::error::Error),
+}
+
 impl Lifter {
     fn new(translator: Translator, convention: Convention) -> Self {
         Self {
@@ -102,5 +110,13 @@ impl Lifter {
             translator,
             convention,
         }
+    }
+    
+    pub fn context(&self) -> ContextDatabase {
+        self.translator.context_database()
+    }
+    
+    pub fn lift_block(&self, context: &mut ContextDatabase, address: Addr, bytes: &[u8]) -> Result<Vec<Entity<Blk>>, LifterError> {
+        Ok(Vec::default())
     }
 }

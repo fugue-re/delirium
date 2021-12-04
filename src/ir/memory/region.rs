@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use thiserror::Error;
 
-use crate::ir::memory::Address;
+use crate::ir::memory::Addr;
 use crate::ir::value::bv::BitVec;
 
 use crate::prelude::bytes::{BE, LE, ByteCast, Endian};
@@ -17,7 +17,7 @@ use crate::prelude::{Entity, Id};
 #[derive(Clone)]
 pub struct Region<'r> {
     name: Arc<str>,
-    range: Interval<Address>,
+    range: Interval<Addr>,
     endian: Endian,
     bytes: Cow<'r, [u8]>,
 }
@@ -35,7 +35,7 @@ pub enum RegionIOError {
 impl<'r> Region<'r> {
     pub fn new_with<N, A, B>(id: Id<Self>, name: N, address: A, endian: Endian, bytes: B) -> Entity<Self>
     where N: Into<Arc<str>>,
-          A: Into<Address>,
+          A: Into<Addr>,
           B: Into<Cow<'r, [u8]>> {
         let address = address.into();  
         let bytes = bytes.into();
@@ -61,12 +61,12 @@ impl<'r> Region<'r> {
 
     pub fn new<N, A, B>(id: Id<Self>, name: N, address: A, endian: Endian, bytes: B) -> Entity<Self>
     where N: Into<Arc<str>>,
-          A: Into<Address>,
+          A: Into<Addr>,
           B: Into<Cow<'r, [u8]>> {
         Self::new_with(id, name, address, endian, bytes)
     }
     
-    pub fn interval(&self) -> &Interval<Address> {
+    pub fn interval(&self) -> &Interval<Addr> {
         &self.range
     }
     
@@ -74,7 +74,7 @@ impl<'r> Region<'r> {
         &self.name
     }
     
-    pub fn address(&self) -> &Address {
+    pub fn address(&self) -> &Addr {
         self.range.start()
     }
     
@@ -94,12 +94,12 @@ impl<'r> Region<'r> {
         self.bytes.to_mut()
     }
     
-    pub fn contains_range(&self, address: impl Borrow<Address>, count: usize) -> bool {
+    pub fn contains_range(&self, address: impl Borrow<Addr>, count: usize) -> bool {
         let address = address.borrow();
         count > 0 && self.interval().contains_point(address) && self.interval().contains_point(&(address + (count - 1)))
     }
 
-    pub fn read_bits(&self, address: impl Borrow<Address>, bits: u32) -> Result<BitVec, RegionIOError> {
+    pub fn read_bits(&self, address: impl Borrow<Addr>, bits: u32) -> Result<BitVec, RegionIOError> {
         let aligned = bits % 8 == 0;
         let count = bits / 8 + if aligned { 0 } else { 1 };
         let range = self.view_bytes(address, count as usize)?;
@@ -121,7 +121,7 @@ impl<'r> Region<'r> {
         }
     }
 
-    pub fn write_bits(&mut self, address: impl Borrow<Address>, bv: impl Borrow<BitVec>) -> Result<(), RegionIOError> {
+    pub fn write_bits(&mut self, address: impl Borrow<Addr>, bv: impl Borrow<BitVec>) -> Result<(), RegionIOError> {
         let bv = bv.borrow();
         let bits = bv.bits();
 
@@ -159,7 +159,7 @@ impl<'r> Region<'r> {
         Ok(())
     }
 
-    pub fn read_value<T: ByteCast>(&self, address: impl Borrow<Address>) -> Result<T, RegionIOError> {
+    pub fn read_value<T: ByteCast>(&self, address: impl Borrow<Addr>) -> Result<T, RegionIOError> {
         let range = self.view_bytes(address, T::SIZEOF)?;
         Ok(if self.endian().is_little() {
             T::from_bytes::<LE>(range)
@@ -168,7 +168,7 @@ impl<'r> Region<'r> {
         })
     }
 
-    pub fn write_value<T: ByteCast>(&mut self, address: impl Borrow<Address>, value: impl Borrow<T>) -> Result<(), RegionIOError> {
+    pub fn write_value<T: ByteCast>(&mut self, address: impl Borrow<Addr>, value: impl Borrow<T>) -> Result<(), RegionIOError> {
         let endian = self.endian();
         let range = self.view_bytes_mut(address, T::SIZEOF)?;
         let value = value.borrow();
@@ -180,7 +180,7 @@ impl<'r> Region<'r> {
         })
     }
     
-    pub fn view_bytes_from(&self, address: impl Borrow<Address>) -> Result<&[u8], RegionIOError> {
+    pub fn view_bytes_from(&self, address: impl Borrow<Addr>) -> Result<&[u8], RegionIOError> {
         let address = address.borrow();
         if !self.range.contains_point(address) {
             return Err(RegionIOError::OOBRead(self.name.clone()))
@@ -192,7 +192,7 @@ impl<'r> Region<'r> {
         Ok(&self.bytes[offset..])
     }
 
-    pub fn view_bytes_from_mut(&mut self, address: impl Borrow<Address>) -> Result<&mut [u8], RegionIOError> {
+    pub fn view_bytes_from_mut(&mut self, address: impl Borrow<Addr>) -> Result<&mut [u8], RegionIOError> {
         let address = address.borrow();
         if !self.range.contains_point(address) {
             return Err(RegionIOError::OOBRead(self.name.clone()))
@@ -204,7 +204,7 @@ impl<'r> Region<'r> {
         Ok(&mut self.bytes.to_mut()[offset..])
     }
 
-    pub fn view_bytes(&self, address: impl Borrow<Address>, count: usize) -> Result<&[u8], RegionIOError> {
+    pub fn view_bytes(&self, address: impl Borrow<Addr>, count: usize) -> Result<&[u8], RegionIOError> {
         let address = address.borrow();
         if !self.contains_range(address, count) {
             return Err(RegionIOError::OOBRead(self.name.clone()))
@@ -216,7 +216,7 @@ impl<'r> Region<'r> {
         Ok(&self.bytes()[offset..offset+count])
     }
 
-    pub fn view_bytes_mut(&mut self, address: impl Borrow<Address>, count: usize) -> Result<&mut [u8], RegionIOError> {
+    pub fn view_bytes_mut(&mut self, address: impl Borrow<Addr>, count: usize) -> Result<&mut [u8], RegionIOError> {
         let address = address.borrow();
         if !self.contains_range(address, count) {
             return Err(RegionIOError::OOBWrite(self.name.clone()))

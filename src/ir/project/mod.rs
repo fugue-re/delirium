@@ -1,11 +1,13 @@
-use crate::ir::memory::Memory;
-
+use crate::ir::memory::Mem;
 use crate::lift::{Lifter, LifterBuilder, LifterBuilderError};
-
 use crate::prelude::{Endian, Entity};
+use crate::oracles::{BlkOracle, SubOracle};
+
+use fugue::ir::disassembly::ContextDatabase;
 
 use std::borrow::Cow;
 use std::path::Path;
+use std::sync::Arc;
 
 use thiserror::Error;
 
@@ -66,16 +68,26 @@ impl ProjectBuilder {
 #[derive(Clone)]
 pub struct Project<'r> {
     name: Cow<'static, str>,
-    memory: Memory<'r>,
     lifter: Lifter,
+    disassembly_context: ContextDatabase,
+    memory: Mem<'r>,
+    blk_oracles: Vec<Arc<dyn BlkOracle>>,
+    sub_oracles: Vec<Arc<dyn SubOracle>>,
 }
 
 impl<'r> Project<'r> {
     pub fn empty(name: impl Into<Cow<'static, str>>, lifter: Lifter) -> Entity<Self> {
         Entity::new("project", Self {
             name: name.into(),
-            memory: Memory::new("M"),
+            disassembly_context: lifter.context(),
             lifter,
+            memory: Mem::new("M"),
+            blk_oracles: Default::default(),
+            sub_oracles: Default::default(),
         })
+    }
+    
+    pub fn lifter(&self) -> &Lifter {
+        &self.lifter
     }
 }

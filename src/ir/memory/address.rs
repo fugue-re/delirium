@@ -12,16 +12,16 @@ use crate::ir::value::bv::{self, BitVec};
 
 #[derive(Debug, Clone, Hash)]
 #[repr(transparent)]
-pub struct Address(BitVec);
+pub struct Addr(BitVec);
 
-impl Display for Address {
+impl Display for Addr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:x}", self.0)
     }
 }
 
 #[derive(Debug, Error)]
-pub enum AddressParseError {
+pub enum AddrParseError {
     #[error(transparent)]
     Parse(#[from] bv::error::ParseError),
     #[error("cannot parse address from string with radix {0}")]
@@ -32,28 +32,28 @@ pub enum AddressParseError {
     ZeroSize,
 }
 
-impl FromStr for Address {
-    type Err = AddressParseError;
+impl FromStr for Addr {
+    type Err = AddrParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bv = s.parse::<BitVec>()?;
         if bv.is_signed() {
-            Err(AddressParseError::Sign)
+            Err(AddrParseError::Sign)
         } else if bv.bits() == 0 {
-            Err(AddressParseError::ZeroSize)
+            Err(AddrParseError::ZeroSize)
         } else {
             Ok(bv.into())
         }
     }
 }
 
-impl From<Address> for BitVec {
-    fn from(addr: Address) -> Self {
+impl From<Addr> for BitVec {
+    fn from(addr: Addr) -> Self {
         addr.0
     }
 }
 
-impl From<BitVec> for Address {
+impl From<BitVec> for Addr {
     fn from(bv: BitVec) -> Self {
         if bv.bits() == 0 {
             panic!("addresses cannot be zero-sized")
@@ -63,38 +63,38 @@ impl From<BitVec> for Address {
     }
 }
 
-impl From<u8> for Address {
+impl From<u8> for Addr {
     fn from(value: u8) -> Self {
         Self(BitVec::from(value))
     }
 }
 
-impl From<u16> for Address {
+impl From<u16> for Addr {
     fn from(value: u16) -> Self {
         Self(BitVec::from(value))
     }
 }
 
-impl From<u32> for Address {
+impl From<u32> for Addr {
     fn from(value: u32) -> Self {
         Self(BitVec::from(value))
     }
 }
 
-impl From<u64> for Address {
+impl From<u64> for Addr {
     fn from(value: u64) -> Self {
         Self(BitVec::from(value))
     }
 }
 
-impl From<u128> for Address {
+impl From<u128> for Addr {
     fn from(value: u128) -> Self {
         Self(BitVec::from(value))
     }
 }
 
-impl Zero for Address {
-    fn zero() -> Address {
+impl Zero for Addr {
+    fn zero() -> Addr {
         Self::from(BitVec::zero(1))
     }
     
@@ -107,8 +107,8 @@ impl Zero for Address {
     }
 }
 
-impl One for Address {
-    fn one() -> Address {
+impl One for Addr {
+    fn one() -> Addr {
         Self::from(BitVec::one(1))
     }
     
@@ -121,7 +121,7 @@ impl One for Address {
     }
 }
 
-impl Add<Address> for Address {
+impl Add<Addr> for Addr {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
@@ -136,7 +136,7 @@ impl Add<Address> for Address {
     }
 }
 
-impl Add<&Address> for Address {
+impl Add<&Addr> for Addr {
     type Output = Self;
 
     fn add(self, rhs: &Self) -> Self {
@@ -151,7 +151,7 @@ impl Add<&Address> for Address {
     }
 }
 
-impl Add<usize> for Address {
+impl Add<usize> for Addr {
     type Output = Self;
 
     fn add(self, rhs: usize) -> Self {
@@ -162,14 +162,14 @@ impl Add<usize> for Address {
     }
 }
 
-impl Add<Address> for &Address {
-    type Output = Address;
+impl Add<Addr> for &Addr {
+    type Output = Addr;
 
-    fn add(self, rhs: Address) -> Address {
+    fn add(self, rhs: Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 + &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) + &rhs.0,
             Ordering::Greater => &self.0 + &rhs.0.unsigned_cast(lbits as usize),
@@ -177,14 +177,14 @@ impl Add<Address> for &Address {
     }
 }
 
-impl Add<&Address> for &Address {
-    type Output = Address;
+impl Add<&Addr> for &Addr {
+    type Output = Addr;
 
-    fn add(self, rhs: &Address) -> Address {
+    fn add(self, rhs: &Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 + &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) + &rhs.0,
             Ordering::Greater => &self.0 + &rhs.0.unsigned_cast(lbits as usize),
@@ -192,10 +192,10 @@ impl Add<&Address> for &Address {
     }
 }
 
-impl Add<usize> for &Address {
-    type Output = Address;
+impl Add<usize> for &Addr {
+    type Output = Addr;
 
-    fn add(self, rhs: usize) -> Address {
+    fn add(self, rhs: usize) -> Addr {
         let lbits = self.bits();
         let rhs_bv = BitVec::from_usize(rhs, lbits as usize);
         
@@ -203,7 +203,7 @@ impl Add<usize> for &Address {
     }
 }
 
-impl Div<Address> for Address {
+impl Div<Addr> for Addr {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self {
@@ -218,7 +218,7 @@ impl Div<Address> for Address {
     }
 }
 
-impl Div<&Address> for Address {
+impl Div<&Addr> for Addr {
     type Output = Self;
 
     fn div(self, rhs: &Self) -> Self {
@@ -233,7 +233,7 @@ impl Div<&Address> for Address {
     }
 }
 
-impl Div<usize> for Address {
+impl Div<usize> for Addr {
     type Output = Self;
 
     fn div(self, rhs: usize) -> Self {
@@ -244,14 +244,14 @@ impl Div<usize> for Address {
     }
 }
 
-impl Div<Address> for &Address {
-    type Output = Address;
+impl Div<Addr> for &Addr {
+    type Output = Addr;
 
-    fn div(self, rhs: Address) -> Address {
+    fn div(self, rhs: Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 / &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) / &rhs.0,
             Ordering::Greater => &self.0 / &rhs.0.unsigned_cast(lbits as usize),
@@ -259,14 +259,14 @@ impl Div<Address> for &Address {
     }
 }
 
-impl Div<&Address> for &Address {
-    type Output = Address;
+impl Div<&Addr> for &Addr {
+    type Output = Addr;
 
-    fn div(self, rhs: &Address) -> Address {
+    fn div(self, rhs: &Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 / &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) / &rhs.0,
             Ordering::Greater => &self.0 / &rhs.0.unsigned_cast(lbits as usize),
@@ -274,10 +274,10 @@ impl Div<&Address> for &Address {
     }
 }
 
-impl Div<usize> for &Address {
-    type Output = Address;
+impl Div<usize> for &Addr {
+    type Output = Addr;
 
-    fn div(self, rhs: usize) -> Address {
+    fn div(self, rhs: usize) -> Addr {
         let lbits = self.bits();
         let rhs_bv = BitVec::from_usize(rhs, lbits as usize);
         
@@ -285,7 +285,7 @@ impl Div<usize> for &Address {
     }
 }
 
-impl Mul<Address> for Address {
+impl Mul<Addr> for Addr {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
@@ -300,7 +300,7 @@ impl Mul<Address> for Address {
     }
 }
 
-impl Mul<&Address> for Address {
+impl Mul<&Addr> for Addr {
     type Output = Self;
 
     fn mul(self, rhs: &Self) -> Self {
@@ -315,7 +315,7 @@ impl Mul<&Address> for Address {
     }
 }
 
-impl Mul<usize> for Address {
+impl Mul<usize> for Addr {
     type Output = Self;
 
     fn mul(self, rhs: usize) -> Self {
@@ -326,14 +326,14 @@ impl Mul<usize> for Address {
     }
 }
 
-impl Mul<Address> for &Address {
-    type Output = Address;
+impl Mul<Addr> for &Addr {
+    type Output = Addr;
 
-    fn mul(self, rhs: Address) -> Address {
+    fn mul(self, rhs: Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 * &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) * &rhs.0,
             Ordering::Greater => &self.0 * &rhs.0.unsigned_cast(lbits as usize),
@@ -341,14 +341,14 @@ impl Mul<Address> for &Address {
     }
 }
 
-impl Mul<&Address> for &Address {
-    type Output = Address;
+impl Mul<&Addr> for &Addr {
+    type Output = Addr;
 
-    fn mul(self, rhs: &Address) -> Address {
+    fn mul(self, rhs: &Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 * &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) * &rhs.0,
             Ordering::Greater => &self.0 * &rhs.0.unsigned_cast(lbits as usize),
@@ -356,10 +356,10 @@ impl Mul<&Address> for &Address {
     }
 }
 
-impl Mul<usize> for &Address {
-    type Output = Address;
+impl Mul<usize> for &Addr {
+    type Output = Addr;
 
-    fn mul(self, rhs: usize) -> Address {
+    fn mul(self, rhs: usize) -> Addr {
         let lbits = self.bits();
         let rhs_bv = BitVec::from_usize(rhs, lbits as usize);
         
@@ -367,7 +367,7 @@ impl Mul<usize> for &Address {
     }
 }
 
-impl Rem<Address> for Address {
+impl Rem<Addr> for Addr {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self {
@@ -382,7 +382,7 @@ impl Rem<Address> for Address {
     }
 }
 
-impl Rem<&Address> for Address {
+impl Rem<&Addr> for Addr {
     type Output = Self;
 
     fn rem(self, rhs: &Self) -> Self {
@@ -397,7 +397,7 @@ impl Rem<&Address> for Address {
     }
 }
 
-impl Rem<usize> for Address {
+impl Rem<usize> for Addr {
     type Output = Self;
 
     fn rem(self, rhs: usize) -> Self {
@@ -408,14 +408,14 @@ impl Rem<usize> for Address {
     }
 }
 
-impl Rem<Address> for &Address {
-    type Output = Address;
+impl Rem<Addr> for &Addr {
+    type Output = Addr;
 
-    fn rem(self, rhs: Address) -> Address {
+    fn rem(self, rhs: Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 % &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) % &rhs.0,
             Ordering::Greater => &self.0 % &rhs.0.unsigned_cast(lbits as usize),
@@ -423,14 +423,14 @@ impl Rem<Address> for &Address {
     }
 }
 
-impl Rem<&Address> for &Address {
-    type Output = Address;
+impl Rem<&Addr> for &Addr {
+    type Output = Addr;
 
-    fn rem(self, rhs: &Address) -> Address {
+    fn rem(self, rhs: &Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 % &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) % &rhs.0,
             Ordering::Greater => &self.0 % &rhs.0.unsigned_cast(lbits as usize),
@@ -438,10 +438,10 @@ impl Rem<&Address> for &Address {
     }
 }
 
-impl Rem<usize> for &Address {
-    type Output = Address;
+impl Rem<usize> for &Addr {
+    type Output = Addr;
 
-    fn rem(self, rhs: usize) -> Address {
+    fn rem(self, rhs: usize) -> Addr {
         let lbits = self.bits();
         let rhs_bv = BitVec::from_usize(rhs, lbits as usize);
         
@@ -449,7 +449,7 @@ impl Rem<usize> for &Address {
     }
 }
 
-impl Sub<Address> for Address {
+impl Sub<Addr> for Addr {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
@@ -464,7 +464,7 @@ impl Sub<Address> for Address {
     }
 }
 
-impl Sub<&Address> for Address {
+impl Sub<&Addr> for Addr {
     type Output = Self;
 
     fn sub(self, rhs: &Self) -> Self {
@@ -479,7 +479,7 @@ impl Sub<&Address> for Address {
     }
 }
 
-impl Sub<usize> for Address {
+impl Sub<usize> for Addr {
     type Output = Self;
 
     fn sub(self, rhs: usize) -> Self {
@@ -490,14 +490,14 @@ impl Sub<usize> for Address {
     }
 }
 
-impl Sub<Address> for &Address {
-    type Output = Address;
+impl Sub<Addr> for &Addr {
+    type Output = Addr;
 
-    fn sub(self, rhs: Address) -> Address {
+    fn sub(self, rhs: Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 - &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) - &rhs.0,
             Ordering::Greater => &self.0 - &rhs.0.unsigned_cast(lbits as usize),
@@ -505,14 +505,14 @@ impl Sub<Address> for &Address {
     }
 }
 
-impl Sub<&Address> for &Address {
-    type Output = Address;
+impl Sub<&Addr> for &Addr {
+    type Output = Addr;
 
-    fn sub(self, rhs: &Address) -> Address {
+    fn sub(self, rhs: &Addr) -> Addr {
         let lbits = self.bits();
         let rbits = rhs.bits();
         
-        Address::from(match lbits.cmp(&rbits) {
+        Addr::from(match lbits.cmp(&rbits) {
             Ordering::Equal => &self.0 - &rhs.0,
             Ordering::Less => &self.0.unsigned_cast(rbits as usize) - &rhs.0,
             Ordering::Greater => &self.0 - &rhs.0.unsigned_cast(lbits as usize),
@@ -520,10 +520,10 @@ impl Sub<&Address> for &Address {
     }
 }
 
-impl Sub<usize> for &Address {
-    type Output = Address;
+impl Sub<usize> for &Addr {
+    type Output = Addr;
 
-    fn sub(self, rhs: usize) -> Address {
+    fn sub(self, rhs: usize) -> Addr {
         let lbits = self.bits();
         let rhs_bv = BitVec::from_usize(rhs, lbits as usize);
         
@@ -531,7 +531,7 @@ impl Sub<usize> for &Address {
     }
 }
 
-impl PartialEq<Address> for Address {
+impl PartialEq<Addr> for Addr {
     fn eq(&self, rhs: &Self) -> bool {
         let lbits = self.bits();
         let rbits = rhs.bits();
@@ -543,15 +543,15 @@ impl PartialEq<Address> for Address {
         }
     }
 }
-impl Eq for Address { }
+impl Eq for Addr { }
 
-impl PartialOrd<Address> for Address {
-    fn partial_cmp(&self, other: &Address) -> Option<Ordering> {
+impl PartialOrd<Addr> for Addr {
+    fn partial_cmp(&self, other: &Addr) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Address {
+impl Ord for Addr {
     fn cmp(&self, rhs: &Self) -> Ordering {
         let lbits = self.bits();
         let rbits = rhs.bits();
@@ -564,22 +564,22 @@ impl Ord for Address {
     }
 }
 
-impl Num for Address {
-    type FromStrRadixErr = AddressParseError;
+impl Num for Addr {
+    type FromStrRadixErr = AddrParseError;
     
     fn from_str_radix(s: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
         let bv = BitVec::from_str_radix(s, radix)?;
         if bv.is_signed() {
-            Err(AddressParseError::Sign)
+            Err(AddrParseError::Sign)
         } else if bv.bits() == 0 {
-            Err(AddressParseError::ZeroSize)
+            Err(AddrParseError::ZeroSize)
         } else {
             Ok(bv.into())
         }
     }
 }
 
-impl Address {
+impl Addr {
     pub fn as_bits(&self, bits: u32) -> Self {
         self.0.unsigned_cast(bits as usize).into()
     }
@@ -588,7 +588,7 @@ impl Address {
         self.0.cast(bits as usize).into()
     }
     
-    pub fn absolute_difference(&self, other: &Address) -> Option<usize> {
+    pub fn absolute_difference(&self, other: &Addr) -> Option<usize> {
         if self >= other {
             BitVec::from(self - other).to_usize()
         } else {
