@@ -32,6 +32,12 @@ pub enum AddrParseError {
     ZeroSize,
 }
 
+#[derive(Debug, Error)]
+pub enum AddrConvertError {
+    #[error("address cannot be cast to {0}-bit value without loss")]
+    LossyCast(u32),
+}
+
 impl FromStr for Addr {
     type Err = AddrParseError;
 
@@ -60,6 +66,86 @@ impl From<BitVec> for Addr {
         }
 
         Self(bv.unsigned())
+    }
+}
+
+impl TryFrom<Addr> for u8 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: Addr) -> Result<u8, Self::Error> {
+        addr.0.to_u8().ok_or_else(|| AddrConvertError::LossyCast(8))
+    }
+}
+
+impl TryFrom<&Addr> for u8 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: &Addr) -> Result<u8, Self::Error> {
+        addr.0.to_u8().ok_or_else(|| AddrConvertError::LossyCast(8))
+    }
+}
+
+impl TryFrom<Addr> for u16 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: Addr) -> Result<u16, Self::Error> {
+        addr.0.to_u16().ok_or_else(|| AddrConvertError::LossyCast(16))
+    }
+}
+
+impl TryFrom<&Addr> for u16 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: &Addr) -> Result<u16, Self::Error> {
+        addr.0.to_u16().ok_or_else(|| AddrConvertError::LossyCast(16))
+    }
+}
+
+impl TryFrom<Addr> for u32 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: Addr) -> Result<u32, Self::Error> {
+        addr.0.to_u32().ok_or_else(|| AddrConvertError::LossyCast(32))
+    }
+}
+
+impl TryFrom<&Addr> for u32 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: &Addr) -> Result<u32, Self::Error> {
+        addr.0.to_u32().ok_or_else(|| AddrConvertError::LossyCast(32))
+    }
+}
+
+impl TryFrom<Addr> for u64 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: Addr) -> Result<u64, Self::Error> {
+        addr.0.to_u64().ok_or_else(|| AddrConvertError::LossyCast(64))
+    }
+}
+
+impl TryFrom<&Addr> for u64 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: &Addr) -> Result<u64, Self::Error> {
+        addr.0.to_u64().ok_or_else(|| AddrConvertError::LossyCast(64))
+    }
+}
+
+impl TryFrom<Addr> for u128 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: Addr) -> Result<u128, Self::Error> {
+        addr.0.to_u128().ok_or_else(|| AddrConvertError::LossyCast(128))
+    }
+}
+
+impl TryFrom<&Addr> for u128 {
+    type Error = AddrConvertError;
+    
+    fn try_from(addr: &Addr) -> Result<u128, Self::Error> {
+        addr.0.to_u128().ok_or_else(|| AddrConvertError::LossyCast(128))
     }
 }
 

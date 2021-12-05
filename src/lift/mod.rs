@@ -12,6 +12,7 @@ use crate::prelude::{Endian, Entity};
 
 mod ecode;
 use ecode::passes::ECodeVarIndex;
+use ecode::utils::{ECodeExt, ECodeTarget};
 
 #[derive(Clone)]
 pub struct LifterBuilder {
@@ -100,6 +101,8 @@ pub struct Lifter {
 #[derive(Debug, Error)]
 pub enum LifterError {
     #[error(transparent)]
+    AddrSize(#[from] crate::ir::memory::address::AddrConvertError),
+    #[error(transparent)]
     Disassembly(#[from] fugue::ir::error::Error),
 }
 
@@ -116,11 +119,24 @@ impl Lifter {
         self.translator.context_database()
     }
 
-    pub fn lift_blk(&self, ctxt: &mut ContextDatabase, addr: &Addr, bytes: &[u8]) -> Vec<Entity<Blk>> {
+    pub fn lift_blk(&self, ctxt: &mut ContextDatabase, addr: &Addr, bytes: &[u8]) -> Result<Vec<Entity<Blk>>, LifterError> {
         self.lift_blk_with(ctxt, addr, bytes, None)
     }
     
-    pub fn lift_blk_with(&self, ctxt: &mut ContextDatabase, addr: &Addr, bytes: &[u8], size_hint: Option<usize>) -> Vec<Entity<Blk>> {
+    // We lift blocks based on IDA's model of basic blocks (i.e., only
+    // terminate a block on local control-flow/a return).
+    //
+    // We note that each lifted instruction may have internal control-flow
+    // and so for a given block under IDA's model, we may produce many strict
+    // basic blocks (i.e., Blks). For each instruction lifted, we determine
+    // the kind of control-flow that leaves the chunk of ECode statements. We
+    // classify each flow as one of five kinds:
+    //  1. Unresolved (call, return, branch, cbranch with computed target)
+    //  2. IntraIns   (cbranch, branch with inter-chunk flow)
+    //  3. IntraBlk   (fall-through)
+    //  4. InterBlk   (cbranch, branch with non-inter-chunk flow)
+    //  5. InterSub   (call, return)
+    pub fn lift_blk_with(&self, ctxt: &mut ContextDatabase, addr: &Addr, bytes: &[u8], size_hint: Option<usize>) -> Result<Vec<Entity<Blk>>, LifterError> {
         let actual_size = bytes.len();
         let attempt_size = size_hint
             .map(|hint| actual_size.min(hint))
@@ -129,6 +145,17 @@ impl Lifter {
         let bytes = &bytes[..attempt_size];
         let mut blks = Vec::new();
         
-        blks
+        let mut offset = 0;
+        while offset < attempt_size {
+            let addr = self.translator.address(u64::try_from(addr + offset)?);
+            let view = &bytes[offset..];
+            
+            if let Ok(ecode) = self.translator.lift_ecode(ctxt, addr, view) {
+            } else {
+                break;
+            }
+        }
+        
+        Ok(blks)
     }
 }

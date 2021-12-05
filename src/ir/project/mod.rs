@@ -1,6 +1,6 @@
 use crate::ir::{Addr, Blk, Sub};
 use crate::ir::memory::{Mem, Region};
-use crate::lift::{Lifter, LifterBuilder, LifterBuilderError};
+use crate::lift::{Lifter, LifterBuilder, LifterBuilderError, LifterError};
 use crate::prelude::{Endian, Entity, EntityRef, Id, Identifiable};
 use crate::oracles::{BlkOracle, SubOracle};
 
@@ -127,7 +127,7 @@ impl<'r> Project<'r> {
         self.memory.add_region(Region::new(name, addr, endian, bytes));
     }
     
-    pub fn add_blk(&mut self, addr: impl Into<Addr>) -> Vec<Id<Blk>> {
+    pub fn add_blk(&mut self, addr: impl Into<Addr>) -> Result<Vec<Id<Blk>>, LifterError> {
         let addr = addr.into();
         if let Some(region) = self.memory.find_region(&addr) {
             // unwrap is safe here: we know that addr is in region
@@ -141,11 +141,11 @@ impl<'r> Project<'r> {
                 &addr,
                 bytes,
                 size_hint,
-            );
+            )?;
             // if blks is empty, then disassembly likely failed
             if blks.is_empty () {
                 // error?
-                Vec::default()
+                Ok(Vec::default())
             } else {
                 // otherwise, we index the blocks into the current project
                 // we take the identity of the first block to represent the
@@ -161,13 +161,13 @@ impl<'r> Project<'r> {
                     blk_ids.push(blk_id);
                     self.blks.insert(blk_id, blk);
                 }
-                blk_ids
+                Ok(blk_ids)
             }
         // this is likely an errors: there is no mapped region corresponding to
         // the address we want to build the block from.
         } else {
             // error?
-            Vec::default()
+            Ok(Vec::default())
         }
     }
     
