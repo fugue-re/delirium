@@ -103,12 +103,14 @@ impl ECodeExt for ECode {
                 },
                 Stmt::Call(tgt, _) => {
                     targets.push((i, ECodeTarget::InterSub(tgt.clone())));
+                    nfall(i, next, &mut targets);
                 },
                 Stmt::Return(tgt) => {
                     targets.push((i, ECodeTarget::InterRet(tgt.clone(), i + 1 == op_count)));
                 },
                 Stmt::Intrinsic(_, _) => {
                     targets.push((i, ECodeTarget::Intrinsic));
+                    nfall(i, next, &mut targets);
                 },
                 _  => if i + 1 == op_count {
                     nfall(i, next, &mut targets);
