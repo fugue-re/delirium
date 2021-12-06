@@ -1,12 +1,36 @@
 use fugue::ir::il::ecode::{BranchTarget, ECode, Expr, Location, Stmt};
+use std::fmt::{self, Display};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum ECodeTarget {
-    Unresolved,
     IntraIns(Location),
     IntraBlk(Location),
     InterBlk(BranchTarget),
     InterSub(BranchTarget),
+    Intrinsic,
+    Unresolved,
+}
+
+impl ECodeTarget {
+    pub fn ends_block(&self) -> bool {
+        match self {
+            Self::Unresolved | Self::InterBlk(_) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Display for ECodeTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Unresolved => write!(f, "unresolved flow"),
+            Self::IntraIns(loc) => write!(f, "intra-instruction flow to {}", loc),
+            Self::IntraBlk(loc) => write!(f, "intra-block flow to {}", loc),
+            Self::InterBlk(tgt) => write!(f, "inter-block flow to {}", tgt),
+            Self::InterSub(tgt) => write!(f, "inter-sub-routine flow to {}", tgt),
+            Self::Intrinsic => write!(f, "intrinsic flow"),
+        }
+    }
 }
 
 pub trait ECodeExt {
@@ -27,7 +51,7 @@ impl ECodeExt for ECode {
         let nlocation = |i: usize| -> Location { if i >= op_count {
             Location::new(naddress.clone(), i - op_count)
          } else {
-            Location::new(naddress.clone(), i)
+            Location::new(address.clone(), i)
          }};
         
          let nbranch = |i: usize, tgt: &BranchTarget, targets: &mut Vec<(usize, ECodeTarget)>| {
@@ -66,7 +90,7 @@ impl ECodeExt for ECode {
          };
 
         for (i, stmt) in self.operations().iter().enumerate() {
-            let next = nlocation(i);
+            let next = nlocation(i + 1);
             match stmt {
                 Stmt::Branch(tgt) => {
                     nbranch(i, tgt, &mut targets);
@@ -82,7 +106,7 @@ impl ECodeExt for ECode {
                     targets.push((i, ECodeTarget::InterSub(tgt.clone())));
                 },
                 Stmt::Intrinsic(_, _) => {
-                    targets.push((i, ECodeTarget::Unresolved));
+                    targets.push((i, ECodeTarget::Intrinsic));
                 },
                 _ => (),
             }

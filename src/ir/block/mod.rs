@@ -1,26 +1,29 @@
-use crate::ir::{Def, Jmp, Phi};
+use crate::ir::{Addr, Def, Jmp, Phi};
 use crate::prelude::{Identifiable, Entity};
 
 use std::mem::take;
 
 #[derive(Clone)]
 pub struct Blk {
+    addr: Option<Addr>,
     phis: Vec<Entity<Phi>>,
     defs: Vec<Entity<Def>>,
     jmps: Vec<Entity<Jmp>>,
 }
 
 impl Blk {
-    pub fn new() -> Entity<Blk> {
+    pub fn new(addr: impl Into<Option<Addr>>) -> Entity<Blk> {
         Self::new_with(
+            addr,
             Default::default(),
             Default::default(),
             Default::default(),
         )
     }
 
-    pub fn new_with(phis: Vec<Entity<Phi>>, defs: Vec<Entity<Def>>, jmps: Vec<Entity<Jmp>>) -> Entity<Blk> {
+    pub fn new_with(addr: impl Into<Option<Addr>>, phis: Vec<Entity<Phi>>, defs: Vec<Entity<Def>>, jmps: Vec<Entity<Jmp>>) -> Entity<Blk> {
         Entity::new("blk", Self {
+            addr: addr.into(),
             phis,
             defs,
             jmps,
@@ -59,6 +62,7 @@ impl Blk {
         };
 
         let nblk = Self::new_with(
+            None,
             Default::default(),
             ndefs,
             take(&mut self.jmps),
