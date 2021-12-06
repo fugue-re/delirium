@@ -1,6 +1,7 @@
 use fugue::ir::convention::Convention;
 use fugue::ir::{LanguageDB, Translator};
 use fugue::ir::disassembly::ContextDatabase;
+use fugue::ir::il::ecode::Stmt;
 
 use std::borrow::{Borrow, Cow};
 use std::path::Path;
@@ -165,12 +166,17 @@ impl Lifter {
 
             log::trace!("lifting instruction at {}", taddr);
             
-            if let Ok(ecode) = self.translator.lift_ecode(ctxt, taddr, view) {
+            if let Ok(mut ecode) = self.translator.lift_ecode(ctxt, taddr, view) {
                 log::trace!(
                     "lifted instruction sequence consists of {} operations over {} bytes",
                     ecode.operations().len(),
                     ecode.length()
                 );
+                
+                if ecode.operations.is_empty() {
+                    log::trace!("lifted instruction is a no-op");
+                    ecode.operations_mut().push(Stmt::skip());
+                }
                 
                 let targets = ecode.branch_targets();
                 let length = ecode.length();
@@ -229,6 +235,9 @@ mod test {
         
         let _blk1 = lift(0x1000, &[0x90u8])?;
         let _blk2 = lift(0x1001, &[0xf3u8, 0xaau8, 0x90u8])?;
+        let _blk3 = lift(0x1004, &[0x50, 0xF3, 0xAA, 0x53, 0xFF, 0x13, 0x0F, 0x85, 0xFC, 0x00, 0x00, 0x00])?;
+        let _blk4 = lift(0x1010, &[0xE9, 0xFC, 0x00, 0x00, 0x00])?;
+        let _blk5 = lift(0x1015, &[0x5B, 0xC2, 0x04, 0x00])?;
         
         Ok(())
     }

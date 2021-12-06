@@ -7,6 +7,7 @@ pub enum ECodeTarget {
     IntraBlk(Location),
     InterBlk(BranchTarget),
     InterSub(BranchTarget),
+    InterRet(BranchTarget, bool),
     Intrinsic,
     Unresolved,
 }
@@ -14,7 +15,7 @@ pub enum ECodeTarget {
 impl ECodeTarget {
     pub fn ends_block(&self) -> bool {
         match self {
-            Self::Unresolved | Self::InterBlk(_) => true,
+            Self::Unresolved | Self::InterBlk(_) | Self::InterRet(_, true) => true,
             _ => false,
         }
     }
@@ -28,6 +29,7 @@ impl Display for ECodeTarget {
             Self::IntraBlk(loc) => write!(f, "intra-block flow to {}", loc),
             Self::InterBlk(tgt) => write!(f, "inter-block flow to {}", tgt),
             Self::InterSub(tgt) => write!(f, "inter-sub-routine flow to {}", tgt),
+            Self::InterRet(tgt, _last) => write!(f, "inter-sub-routine flow to {} via return", tgt),
             Self::Intrinsic => write!(f, "intrinsic flow"),
         }
     }
@@ -42,7 +44,7 @@ impl ECodeExt for ECode {
         let address = self.address();
         let naddress = self.address() + self.length();
         let op_count = self.operations().len();
-
+        
         let mut targets = Vec::new();
         
         let is_local = |loc: &Location| -> bool { *loc.address() == address };
@@ -103,12 +105,14 @@ impl ECodeExt for ECode {
                     targets.push((i, ECodeTarget::InterSub(tgt.clone())));
                 },
                 Stmt::Return(tgt) => {
-                    targets.push((i, ECodeTarget::InterSub(tgt.clone())));
+                    targets.push((i, ECodeTarget::InterRet(tgt.clone(), i + 1 == op_count)));
                 },
                 Stmt::Intrinsic(_, _) => {
                     targets.push((i, ECodeTarget::Intrinsic));
                 },
-                _ => (),
+                _  => if i + 1 == op_count {
+                    nfall(i, next, &mut targets);
+                },
             }
         }
 
